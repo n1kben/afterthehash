@@ -190,42 +190,9 @@
         font-variant-numeric: tabular-nums;
       }
 
-      .link-modes {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .link-mode {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        font-size: 12px;
-        border-radius: 999px;
-        border: 1px solid #2a2a2a;
-        background: #111;
-        color: #777;
-      }
-
-      .link-mode.on {
-        color: #98c379;
-        border-color: rgba(152, 195, 121, 0.4);
-      }
-
-      .link-mode .mode-icon::before {
-        content: "✗";
-        font-weight: 700;
-      }
-
-      .link-mode.on .mode-icon::before {
-        content: "✓";
-      }
-
       .link-hint {
         font-size: 13px;
-        margin-top: 8px;
+        margin-top: 10px;
         line-height: 1.5;
       }
 
@@ -239,6 +206,17 @@
 
       .link-hint.bad {
         color: #ff6b6b;
+      }
+
+      .link-note {
+        color: #999;
+        font-size: 13px;
+        margin-top: 4px;
+        line-height: 1.5;
+      }
+
+      .link-note:empty {
+        display: none;
       }
 
       .success-container {
@@ -324,8 +302,8 @@
               ></textarea>
               <div id="encrypt-create-link-status" class="link-status" hidden>
                 <div id="encrypt-create-link-stats" class="link-stats"></div>
-                <div id="encrypt-create-link-modes" class="link-modes"></div>
                 <div id="encrypt-create-link-hint" class="link-hint"></div>
+                <div id="encrypt-create-link-note" class="link-note"></div>
               </div>
             </div>
             <div>
@@ -563,8 +541,13 @@
       }
 
       // ==================== EVENT HANDLERS ====================
-      const ADDRESS_BAR_LIMIT = 32 * 1024; // Chromium omnibox display limit
-      const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit
+      const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit (clicked)
+      // Pasting a URL into Brave's address bar truncates it at ~598,700 chars
+      // (measured: a 700,000-char paste kept 598,694). Typing caps far lower
+      // (~32 KB) but nobody types these. Clicking has no such limit (works to
+      // NAV_LIMIT, verified at ~667 KB). Use a conservative 580,000 as the
+      // "safe to paste" threshold; above it, steer people to click instead.
+      const PASTE_LIMIT = 580000;
 
       function formatSize(bytes) {
         if (bytes < 1024) return `${bytes} B`;
@@ -601,29 +584,24 @@
           linkChars,
         )} link`;
 
-        const pasteable = linkChars <= ADDRESS_BAR_LIMIT;
-        const clickable = linkChars <= NAV_LIMIT;
-
-        const badge = (label, on) =>
-          `<span class="link-mode${on ? " on" : ""}">` +
-          `<span class="mode-icon"></span>${label}</span>`;
-        document.getElementById("encrypt-create-link-modes").innerHTML =
-          badge("Copy-paste into address bar", pasteable) +
-          badge("Open by clicking the link", clickable);
-
         const hint = document.getElementById("encrypt-create-link-hint");
+        const note = document.getElementById("encrypt-create-link-note");
         hint.classList.remove("good", "warn", "bad");
-        if (pasteable) {
-          hint.classList.add("good");
-          hint.textContent = "Shareable anywhere.";
-        } else if (clickable) {
-          hint.classList.add("warn");
-          hint.textContent =
-            "Send it as a clickable link — pasting into the address bar will cut it off, and some chat apps may too.";
-        } else {
+
+        if (linkChars > NAV_LIMIT) {
           hint.classList.add("bad");
-          hint.textContent =
-            "Too large to open in Brave/Chrome — shorten the note.";
+          hint.textContent = "✗ Too large to open in Brave/Chrome";
+          note.textContent = "Shorten the note to bring the link under 2 MB.";
+        } else if (linkChars > PASTE_LIMIT) {
+          hint.classList.add("warn");
+          hint.textContent = "✓ Opens when you click the link";
+          note.textContent =
+            "Avoid pasting or typing a link this long into the address bar — it can get truncated and break. Clicking the link always works.";
+        } else {
+          hint.classList.add("good");
+          hint.textContent = "✓ Opens anywhere — paste or click";
+          note.textContent =
+            "Small enough to paste into the address bar or open by clicking.";
         }
       }
 

@@ -261,46 +261,9 @@
         font-variant-numeric: tabular-nums;
       }
 
-      .compress-modes {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 10px;
-      }
-
-      .compress-modes:empty {
-        display: none;
-      }
-
-      .compress-mode {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        font-size: 12px;
-        border-radius: 999px;
-        border: 1px solid #2a2a2a;
-        background: #111;
-        color: #777;
-      }
-
-      .compress-mode.on {
-        color: #98c379;
-        border-color: rgba(152, 195, 121, 0.4);
-      }
-
-      .compress-mode .mode-icon::before {
-        content: "✗";
-        font-weight: 700;
-      }
-
-      .compress-mode.on .mode-icon::before {
-        content: "✓";
-      }
-
       .compress-status {
         font-size: 13px;
-        margin-top: 8px;
+        margin-top: 10px;
         line-height: 1.5;
       }
 
@@ -318,6 +281,17 @@
 
       .compress-status.bad {
         color: #ff6b6b;
+      }
+
+      .compress-note {
+        color: #999;
+        font-size: 13px;
+        margin-top: 4px;
+        line-height: 1.5;
+      }
+
+      .compress-note:empty {
+        display: none;
       }
 
       /* Decrypted-image viewer — mirrors the browser's native image viewer:
@@ -434,10 +408,13 @@
                 >
               </div>
               <div id="encrypt-create-compress-stats" class="compress-stats"></div>
-              <div id="encrypt-create-compress-modes" class="compress-modes"></div>
               <div
                 id="encrypt-create-compress-status"
                 class="compress-status"
+              ></div>
+              <div
+                id="encrypt-create-compress-note"
+                class="compress-note"
               ></div>
             </div>
             <div>
@@ -695,8 +672,13 @@
           : "image/jpeg";
       })();
 
-      const ADDRESS_BAR_LIMIT = 32 * 1024; // Chromium omnibox display limit
-      const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit
+      const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit (clicked)
+      // Pasting a URL into Brave's address bar truncates it at ~598,700 chars
+      // (measured: a 700,000-char paste kept 598,694). Typing caps far lower
+      // (~32 KB) but nobody types these. Clicking has no such limit (works to
+      // NAV_LIMIT, verified at ~667 KB). Use a conservative 580,000 as the
+      // "safe to paste" threshold; above it, steer people to click instead.
+      const PASTE_LIMIT = 580000;
 
       function readFileAsDataURL(file) {
         return new Promise((resolve, reject) => {
@@ -809,29 +791,25 @@
           linkChars,
         )} link`;
 
-        const pasteable = linkChars <= ADDRESS_BAR_LIMIT;
-        const clickable = linkChars <= NAV_LIMIT;
-
-        const badge = (label, on) =>
-          `<span class="compress-mode${on ? " on" : ""}">` +
-          `<span class="mode-icon"></span>${label}</span>`;
-        document.getElementById("encrypt-create-compress-modes").innerHTML =
-          badge("Copy-paste into address bar", pasteable) +
-          badge("Open by clicking the link", clickable);
-
         const status = document.getElementById("encrypt-create-compress-status");
+        const note = document.getElementById("encrypt-create-compress-note");
         status.classList.remove("good", "warn", "bad");
-        if (pasteable) {
-          status.classList.add("good");
-          status.textContent = "Shareable anywhere.";
-        } else if (clickable) {
-          status.classList.add("warn");
-          status.textContent =
-            "Send it as a clickable link — pasting into the address bar will cut it off, and some chat apps may too.";
-        } else {
+
+        if (linkChars > NAV_LIMIT) {
           status.classList.add("bad");
-          status.textContent =
-            "Too large to open in Brave/Chrome — lower the quality or max size.";
+          status.textContent = "✗ Too large to open in Brave/Chrome";
+          note.textContent =
+            "Lower the quality or max size to bring the link under 2 MB.";
+        } else if (linkChars > PASTE_LIMIT) {
+          status.classList.add("warn");
+          status.textContent = "✓ Opens when you click the link";
+          note.textContent =
+            "Avoid pasting or typing a link this long into the address bar — it can get truncated and break. Clicking the link always works.";
+        } else {
+          status.classList.add("good");
+          status.textContent = "✓ Opens anywhere — paste or click";
+          note.textContent =
+            "Small enough to paste into the address bar or open by clicking.";
         }
       }
 
