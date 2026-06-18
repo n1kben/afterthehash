@@ -217,34 +217,144 @@
         min-height: 20px;
       }
 
-      .image-preview,
-      .image-gallery {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
+      .compress-panel {
+        margin-top: 16px;
+        padding: 16px;
+        background: #0a0a0a;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
       }
 
-      .image-preview:empty,
-      .image-gallery:empty {
+      .compress-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .compress-row label {
+        color: #999;
+        font-size: 14px;
+        width: 64px;
+        flex-shrink: 0;
+      }
+
+      .compress-row input[type="range"] {
+        flex: 1;
+        min-width: 0;
+        accent-color: #fff;
+      }
+
+      .compress-val {
+        color: #e0e0e0;
+        font-size: 13px;
+        width: 56px;
+        text-align: right;
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .compress-stats {
+        color: #e0e0e0;
+        font-size: 13px;
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .compress-modes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .compress-modes:empty {
         display: none;
       }
 
-      .image-gallery {
-        margin-top: 16px;
+      .compress-mode {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 999px;
+        border: 1px solid #2a2a2a;
+        background: #111;
+        color: #777;
       }
 
-      .image-preview img {
-        width: 80px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 1px solid #2a2a2a;
+      .compress-mode.on {
+        color: #98c379;
+        border-color: rgba(152, 195, 121, 0.4);
       }
 
-      .image-gallery img {
-        max-width: 100%;
-        border-radius: 8px;
-        border: 1px solid #2a2a2a;
+      .compress-mode .mode-icon::before {
+        content: "✗";
+        font-weight: 700;
+      }
+
+      .compress-mode.on .mode-icon::before {
+        content: "✓";
+      }
+
+      .compress-status {
+        font-size: 13px;
+        margin-top: 8px;
+        line-height: 1.5;
+      }
+
+      .compress-status:empty {
+        display: none;
+      }
+
+      .compress-status.good {
+        color: #98c379;
+      }
+
+      .compress-status.warn {
+        color: #e5c07b;
+      }
+
+      .compress-status.bad {
+        color: #ff6b6b;
+      }
+
+      /* Decrypted-image viewer — mirrors the browser's native image viewer:
+         a black full-bleed surface with the image centered and scaled to fit
+         the window. Clicking toggles full (native) size with pan/scroll. */
+      .image-viewer {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: #000;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: safe center;
+        justify-content: safe center;
+        gap: 24px;
+      }
+
+      .image-viewer:empty {
+        display: none;
+      }
+
+      .image-viewer img {
+        flex: none;
+        display: block;
+        max-width: 100vw;
+        max-height: 100vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        cursor: zoom-in;
+      }
+
+      .image-viewer img.full {
+        max-width: none;
+        max-height: none;
+        cursor: zoom-out;
       }
 
       @media (max-width: 768px) {
@@ -287,14 +397,48 @@
           <h1>Encrypt an image</h1>
           <form id="encrypt-create-form">
             <div>
-              <div class="help-text">Choose image(s)</div>
+              <div class="help-text">Choose an image</div>
               <input
                 id="encrypt-create-images"
                 type="file"
                 accept="image/*"
-                multiple
               />
-              <div id="encrypt-create-image-preview" class="image-preview"></div>
+            </div>
+            <div id="encrypt-create-compress" class="compress-panel" hidden>
+              <div class="compress-row">
+                <label for="encrypt-create-quality">Quality</label>
+                <input
+                  type="range"
+                  id="encrypt-create-quality"
+                  min="0.1"
+                  max="1"
+                  step="0.05"
+                  value="0.7"
+                />
+                <span id="encrypt-create-quality-val" class="compress-val"
+                  >0.70</span
+                >
+              </div>
+              <div class="compress-row">
+                <label for="encrypt-create-maxdim">Max size</label>
+                <input
+                  type="range"
+                  id="encrypt-create-maxdim"
+                  min="64"
+                  max="4096"
+                  step="64"
+                  value="1280"
+                />
+                <span id="encrypt-create-maxdim-val" class="compress-val"
+                  >1280px</span
+                >
+              </div>
+              <div id="encrypt-create-compress-stats" class="compress-stats"></div>
+              <div id="encrypt-create-compress-modes" class="compress-modes"></div>
+              <div
+                id="encrypt-create-compress-status"
+                class="compress-status"
+              ></div>
             </div>
             <div>
               <div class="help-text">Password to encrypt with</div>
@@ -344,7 +488,7 @@
         </div>
         <div id="decrypt-unlocked">
           <h1>Decrypted image</h1>
-          <div id="decrypt-unlocked-images" class="image-gallery"></div>
+          <div id="decrypt-unlocked-images" class="image-viewer"></div>
         </div>
       </div>
     </div>
@@ -530,8 +674,29 @@
       }
 
       // ==================== IMAGE HANDLING ====================
-      // Selected images held as data URLs until they are encrypted.
+      // The image to encrypt, held as a (compressed) data URL until encrypted.
+      // Kept as an array so the payload stays { v: 1, images: [...] }.
       let selectedImages = [];
+
+      // Compression runs entirely on-device via <canvas> — nothing is uploaded.
+      // The sender tunes quality / max dimension and sees the resulting link
+      // size live before creating the link.
+      let originalBitmap = null;
+      let compressTimer = null;
+
+      // WebP compresses better than JPEG and keeps transparency, but canvas
+      // WebP encoding isn't universal (e.g. Safari falls back to PNG). Detect
+      // support once; otherwise encode JPEG.
+      const OUTPUT_TYPE = (() => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 1;
+        return c.toDataURL("image/webp").startsWith("data:image/webp")
+          ? "image/webp"
+          : "image/jpeg";
+      })();
+
+      const ADDRESS_BAR_LIMIT = 32 * 1024; // Chromium omnibox display limit
+      const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit
 
       function readFileAsDataURL(file) {
         return new Promise((resolve, reject) => {
@@ -542,22 +707,172 @@
         });
       }
 
-      async function handleImageSelect(e) {
-        const files = Array.from(e.target.files || []);
-        selectedImages = await Promise.all(files.map(readFileAsDataURL));
+      // Estimate the final link length (chars) for an image data URL, mirroring
+      // the encrypt pipeline: JSON-wrap, prepend salt+iv, append the GCM tag,
+      // then base64-encode the whole thing.
+      function estimateLinkChars(dataUrl) {
+        const jsonBytes = dataUrl.length + 21; // {"v":1,"images":["…"]}
+        const combinedBytes = jsonBytes + 44; // salt 16 + iv 12 + GCM tag 16
+        const base64Len = Math.ceil(combinedBytes / 3) * 4;
+        const prefix = (location.origin + location.pathname + "#v1:").length;
+        return base64Len + prefix;
+      }
 
-        const preview = document.getElementById("encrypt-create-image-preview");
-        preview.replaceChildren();
-        for (const dataUrl of selectedImages) {
-          const img = document.createElement("img");
-          img.src = dataUrl;
-          preview.appendChild(img);
+      function formatKb(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        const kb = bytes / 1024;
+        return kb < 1024
+          ? `${kb.toFixed(kb < 100 ? 1 : 0)} KB`
+          : `${(kb / 1024).toFixed(1)} MB`;
+      }
+
+      async function handleImageSelect(e) {
+        const file = (e.target.files || [])[0];
+        const panel = document.getElementById("encrypt-create-compress");
+
+        if (originalBitmap) {
+          originalBitmap.close?.();
+          originalBitmap = null;
         }
+
+        if (!file) {
+          selectedImages = [];
+          panel.hidden = true;
+          return;
+        }
+
+        try {
+          originalBitmap = await createImageBitmap(file, {
+            imageOrientation: "from-image",
+          });
+        } catch (_) {
+          // Some formats (e.g. SVG) can't be decoded to a bitmap — fall back to
+          // encrypting the original file uncompressed, with no controls.
+          const dataUrl = await readFileAsDataURL(file);
+          selectedImages = [dataUrl];
+          panel.hidden = true;
+          return;
+        }
+
+        // Never upscale: cap the "max size" slider at the source's longest side.
+        const longest = Math.max(originalBitmap.width, originalBitmap.height);
+        const maxInput = document.getElementById("encrypt-create-maxdim");
+        maxInput.max = longest;
+        if (Number(maxInput.value) > longest) maxInput.value = longest;
+
+        panel.hidden = false;
+        handleCompressInput(); // sync the value labels, then compress
+      }
+
+      async function recompress() {
+        if (!originalBitmap) return;
+
+        const quality = Number(
+          document.getElementById("encrypt-create-quality").value,
+        );
+        const longest = Math.max(originalBitmap.width, originalBitmap.height);
+        const maxDim = Math.min(
+          Number(document.getElementById("encrypt-create-maxdim").value),
+          longest,
+        );
+        const scale = longest > maxDim ? maxDim / longest : 1;
+        const w = Math.max(1, Math.round(originalBitmap.width * scale));
+        const h = Math.max(1, Math.round(originalBitmap.height * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        // JPEG has no alpha; flatten onto white so transparency isn't black.
+        if (OUTPUT_TYPE === "image/jpeg") {
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, w, h);
+        }
+        ctx.drawImage(originalBitmap, 0, 0, w, h);
+
+        const dataUrl = canvas.toDataURL(OUTPUT_TYPE, quality);
+        selectedImages = [dataUrl];
+        updateCompressReadout(dataUrl, w, h);
+      }
+
+      function updateCompressReadout(dataUrl, w, h) {
+        const imageBytes = Math.round(
+          (dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75,
+        );
+        const linkChars = estimateLinkChars(dataUrl);
+
+        document.getElementById(
+          "encrypt-create-compress-stats",
+        ).textContent = `${w}×${h} · ${formatKb(imageBytes)} image · ${formatKb(
+          linkChars,
+        )} link`;
+
+        const pasteable = linkChars <= ADDRESS_BAR_LIMIT;
+        const clickable = linkChars <= NAV_LIMIT;
+
+        const badge = (label, on) =>
+          `<span class="compress-mode${on ? " on" : ""}">` +
+          `<span class="mode-icon"></span>${label}</span>`;
+        document.getElementById("encrypt-create-compress-modes").innerHTML =
+          badge("Copy-paste into address bar", pasteable) +
+          badge("Open by clicking the link", clickable);
+
+        const status = document.getElementById("encrypt-create-compress-status");
+        status.classList.remove("good", "warn", "bad");
+        if (pasteable) {
+          status.classList.add("good");
+          status.textContent = "Shareable anywhere.";
+        } else if (clickable) {
+          status.classList.add("warn");
+          status.textContent =
+            "Send it as a clickable link — pasting into the address bar will cut it off, and some chat apps may too.";
+        } else {
+          status.classList.add("bad");
+          status.textContent =
+            "Too large to open in Brave/Chrome — lower the quality or max size.";
+        }
+      }
+
+      function handleCompressInput() {
+        document.getElementById("encrypt-create-quality-val").textContent =
+          Number(
+            document.getElementById("encrypt-create-quality").value,
+          ).toFixed(2);
+        document.getElementById(
+          "encrypt-create-maxdim-val",
+        ).textContent = `${document.getElementById("encrypt-create-maxdim").value}px`;
+        clearTimeout(compressTimer);
+        compressTimer = setTimeout(recompress, 80);
+      }
+
+      // Blob URLs created for the current view, so we can release them when
+      // the view is re-rendered.
+      let viewerObjectUrls = [];
+
+      // Base64 data URLs are ~33% larger than the raw bytes and live entirely
+      // in the JS heap / DOM string. For large images a Blob URL is far lighter
+      // and displays identically — it's the same kind of URL the browser's own
+      // image viewer uses.
+      function dataUrlToBlobUrl(dataUrl) {
+        const comma = dataUrl.indexOf(",");
+        const mime = (/^data:([^;,]+)/.exec(dataUrl) || [])[1] || "image/png";
+        const binary = atob(dataUrl.slice(comma + 1));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return URL.createObjectURL(new Blob([bytes], { type: mime }));
       }
 
       function renderDecrypted(data) {
         const imagesEl = document.getElementById("decrypt-unlocked-images");
         imagesEl.replaceChildren();
+
+        // Release blob URLs from any previous render.
+        for (const url of viewerObjectUrls) URL.revokeObjectURL(url);
+        viewerObjectUrls = [];
 
         let images = [];
         try {
@@ -566,12 +881,24 @@
             images = parsed.images;
           }
         } catch (_) {
-          // Malformed payload — leave the gallery empty.
+          // Malformed payload — leave the viewer empty.
         }
 
         for (const dataUrl of images) {
+          let src = dataUrl;
+          try {
+            src = dataUrlToBlobUrl(dataUrl);
+            viewerObjectUrls.push(src);
+          } catch (_) {
+            // Fall back to the data URL if it isn't valid base64.
+          }
+
           const img = document.createElement("img");
-          img.src = dataUrl;
+          img.src = src;
+          img.alt = "Decrypted image";
+          // Click toggles between fit-to-window and full (native) size, like
+          // the browser's native image viewer.
+          img.addEventListener("click", () => img.classList.toggle("full"));
           imagesEl.appendChild(img);
         }
       }
@@ -685,6 +1012,14 @@
         document
           .getElementById("encrypt-create-images")
           .addEventListener("change", handleImageSelect);
+
+        document
+          .getElementById("encrypt-create-quality")
+          .addEventListener("input", handleCompressInput);
+
+        document
+          .getElementById("encrypt-create-maxdim")
+          .addEventListener("input", handleCompressInput);
 
         document
           .getElementById("decrypt-locked-form")

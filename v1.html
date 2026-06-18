@@ -176,6 +176,71 @@
         margin-bottom: 8px;
       }
 
+      .link-status {
+        margin-top: 10px;
+      }
+
+      .link-status[hidden] {
+        display: none;
+      }
+
+      .link-stats {
+        color: #e0e0e0;
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .link-modes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .link-mode {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 999px;
+        border: 1px solid #2a2a2a;
+        background: #111;
+        color: #777;
+      }
+
+      .link-mode.on {
+        color: #98c379;
+        border-color: rgba(152, 195, 121, 0.4);
+      }
+
+      .link-mode .mode-icon::before {
+        content: "✗";
+        font-weight: 700;
+      }
+
+      .link-mode.on .mode-icon::before {
+        content: "✓";
+      }
+
+      .link-hint {
+        font-size: 13px;
+        margin-top: 8px;
+        line-height: 1.5;
+      }
+
+      .link-hint.good {
+        color: #98c379;
+      }
+
+      .link-hint.warn {
+        color: #e5c07b;
+      }
+
+      .link-hint.bad {
+        color: #ff6b6b;
+      }
+
       .success-container {
         display: flex;
         gap: 12px;
@@ -257,6 +322,11 @@
                 id="encrypt-create-text"
                 placeholder="Enter your secret message here..."
               ></textarea>
+              <div id="encrypt-create-link-status" class="link-status" hidden>
+                <div id="encrypt-create-link-stats" class="link-stats"></div>
+                <div id="encrypt-create-link-modes" class="link-modes"></div>
+                <div id="encrypt-create-link-hint" class="link-hint"></div>
+              </div>
             </div>
             <div>
               <div class="help-text">Password to encrypt with</div>
@@ -486,6 +556,70 @@
       }
 
       // ==================== EVENT HANDLERS ====================
+      const ADDRESS_BAR_LIMIT = 32 * 1024; // Chromium omnibox display limit
+      const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit
+
+      function formatSize(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        const kb = bytes / 1024;
+        return kb < 1024
+          ? `${kb.toFixed(kb < 100 ? 1 : 0)} KB`
+          : `${(kb / 1024).toFixed(1)} MB`;
+      }
+
+      // Estimate the final link length (chars) for a note, mirroring the
+      // encrypt pipeline: prepend salt+iv, append the GCM tag, then base64.
+      function estimateLinkChars(text) {
+        const textBytes = new TextEncoder().encode(text).length;
+        const combinedBytes = textBytes + 44; // salt 16 + iv 12 + GCM tag 16
+        const base64Len = Math.ceil(combinedBytes / 3) * 4;
+        const prefix = (location.origin + location.pathname + "#v1:").length;
+        return base64Len + prefix;
+      }
+
+      function updateLinkStatus() {
+        const text = document.getElementById("encrypt-create-text").value;
+        const status = document.getElementById("encrypt-create-link-status");
+
+        if (!text) {
+          status.hidden = true;
+          return;
+        }
+        status.hidden = false;
+
+        const linkChars = estimateLinkChars(text);
+        document.getElementById(
+          "encrypt-create-link-stats",
+        ).textContent = `${text.length.toLocaleString()} chars · ${formatSize(
+          linkChars,
+        )} link`;
+
+        const pasteable = linkChars <= ADDRESS_BAR_LIMIT;
+        const clickable = linkChars <= NAV_LIMIT;
+
+        const badge = (label, on) =>
+          `<span class="link-mode${on ? " on" : ""}">` +
+          `<span class="mode-icon"></span>${label}</span>`;
+        document.getElementById("encrypt-create-link-modes").innerHTML =
+          badge("Copy-paste into address bar", pasteable) +
+          badge("Open by clicking the link", clickable);
+
+        const hint = document.getElementById("encrypt-create-link-hint");
+        hint.classList.remove("good", "warn", "bad");
+        if (pasteable) {
+          hint.classList.add("good");
+          hint.textContent = "Shareable anywhere.";
+        } else if (clickable) {
+          hint.classList.add("warn");
+          hint.textContent =
+            "Send it as a clickable link — pasting into the address bar will cut it off, and some chat apps may too.";
+        } else {
+          hint.classList.add("bad");
+          hint.textContent =
+            "Too large to open in Brave/Chrome — shorten the note.";
+        }
+      }
+
       async function handleEncryptSubmit(e) {
         e.preventDefault();
 
@@ -575,6 +709,10 @@
         document
           .getElementById("encrypt-create-form")
           .addEventListener("submit", handleEncryptSubmit);
+
+        document
+          .getElementById("encrypt-create-text")
+          .addEventListener("input", updateLinkStatus);
 
         document
           .getElementById("decrypt-locked-form")
