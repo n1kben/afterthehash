@@ -1,4 +1,4 @@
-# encrypted
+# afterthehash
 
 Client-side, zero-server tool for sharing secrets. Everything is a single,
 self-contained HTML file: encryption/decryption happens entirely in the browser
