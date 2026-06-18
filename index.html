@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Encrypted - Share secrets. Zero trust required.</title>
+    <title>afterthehash - Share secrets. Zero trust required.</title>
     <style>
       * {
         margin: 0;
@@ -100,6 +100,28 @@
 
       .cta-button:hover {
         opacity: 0.9;
+      }
+
+      .cta-button.secondary {
+        background: transparent;
+        color: #fff;
+        border: 1px solid #2a2a2a;
+      }
+
+      .cta-button.secondary:hover {
+        border-color: #444;
+        opacity: 1;
+      }
+
+      .cta-group {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .final-cta .cta-group {
+        justify-content: flex-start;
       }
 
       .checklist {
@@ -393,8 +415,14 @@
         border: 1px solid #2a2a2a;
         border-radius: 8px;
         display: flex;
-        align-items: center;
-        gap: 48px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 32px;
+      }
+
+      .final-cta-footer {
+        padding-top: 32px;
+        border-top: 1px solid #2a2a2a;
       }
 
       .final-cta-content {
@@ -414,6 +442,7 @@
         font-size: 18px;
         line-height: 1.6;
         margin-bottom: 0;
+        max-width: 480px;
       }
 
       @media (max-width: 768px) {
@@ -556,6 +585,15 @@
         .final-cta .cta-button {
           max-width: 100%;
         }
+
+        .cta-group {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .cta-button {
+          text-align: center;
+        }
       }
 
       @media (max-width: 480px) {
@@ -679,8 +717,7 @@
   <body>
     <header>
       <a href="/"
-        >en<span class="bracket">[</span><span class="highlight">crypt</span
-        ><span class="bracket">]</span>ed</a
+        >afterthe<span class="highlight">#</span></a
       >
     </header>
 
@@ -688,12 +725,20 @@
       <div class="hero">
         <h1>Share secrets.<br />Zero trust required.</h1>
         <p class="tagline">
-          End-to-end encrypted notes in a single HTML file. No servers. No
-          tracking. Completely verifiable.
+          End-to-end encrypted notes and images in a single HTML file. No
+          servers. No tracking. Completely verifiable.
         </p>
-        <a href="/v1.html" class="cta-button" id="cta-button-hero"
-          >Create encrypted note <span class="version-text">(v1)</span></a
-        >
+        <div class="cta-group">
+          <a href="/v1.html" class="cta-button" id="cta-button-hero"
+            >Encrypt a note</a
+          >
+          <a
+            href="/image-v1.html"
+            class="cta-button secondary"
+            id="cta-button-hero-image"
+            >Encrypt an image</a
+          >
+        </div>
       </div>
 
       <div class="checklist">
@@ -744,7 +789,7 @@
                   <span class="browser-bar-dot"></span>
                 </div>
                 <div class="browser-bar-url">
-                  <span id="domain-text">encrypted.com/v1.html</span
+                  <span id="domain-text">afterthehash.vercel.app/v1.html</span
                   ><span class="browser-bar-hash">#v1:AYJdG8xPq...</span>
                 </div>
               </div>
@@ -819,13 +864,23 @@
         <div class="final-cta-content">
           <h3>Try it yourself</h3>
           <p>
-            Everything you've seen is verifiable. Create an encrypted note and
-            inspect the source code.
+            Everything you've seen is verifiable. Create an encrypted note or
+            image and inspect the source code.
           </p>
         </div>
-        <a href="/v1.html" class="cta-button" id="cta-button-final"
-          >Create encrypted note <span class="version-text">(v1)</span></a
-        >
+        <div class="final-cta-footer">
+          <div class="cta-group">
+            <a href="/v1.html" class="cta-button" id="cta-button-final"
+              >Encrypt a note</a
+            >
+            <a
+              href="/image-v1.html"
+              class="cta-button secondary"
+              id="cta-button-final-image"
+              >Encrypt an image</a
+            >
+          </div>
+        </div>
       </div>
     </div>
 

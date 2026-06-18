@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>afterthehash</title>
+    <title>afterthehash - Image</title>
     <style>
       * {
         margin: 0;
@@ -93,31 +93,6 @@
         gap: 16px;
       }
 
-      textarea {
-        width: 100%;
-        min-height: 200px;
-        padding: 16px;
-        background: #0a0a0a;
-        border: 1px solid #2a2a2a;
-        border-radius: 8px;
-        color: #e0e0e0;
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 15px;
-        line-height: 1.6;
-        resize: vertical;
-        transition: border-color 0.2s;
-      }
-
-      textarea:focus {
-        outline: none;
-        border-color: #444;
-      }
-
-      textarea::placeholder {
-        color: #666;
-      }
-
       input[type="text"],
       input[type="password"] {
         width: 100%;
@@ -146,6 +121,42 @@
       input[type="text"]:disabled {
         opacity: 0.7;
         cursor: not-allowed;
+      }
+
+      input[type="file"] {
+        width: 100%;
+        padding: 14px 16px;
+        background: #0a0a0a;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        color: #999;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+
+      input[type="file"]:focus {
+        outline: none;
+        border-color: #444;
+      }
+
+      input[type="file"]::file-selector-button {
+        margin-right: 12px;
+        padding: 8px 14px;
+        background: #1a1a1a;
+        color: #e0e0e0;
+        border: 1px solid #2a2a2a;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      input[type="file"]::file-selector-button:hover {
+        background: #222;
       }
 
       button {
@@ -189,22 +200,51 @@
         flex-shrink: 0;
       }
 
+      .size-note {
+        color: #e5c07b;
+        font-size: 13px;
+        margin-top: 12px;
+        line-height: 1.5;
+      }
+
+      .size-note:empty {
+        display: none;
+      }
+
       #decrypt-locked-error {
         color: #ff6b6b;
         font-size: 14px;
         min-height: 20px;
       }
 
-      #decrypt-unlocked-content {
-        padding: 20px;
-        background: #0a0a0a;
-        border: 1px solid #2a2a2a;
+      .image-preview,
+      .image-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .image-preview:empty,
+      .image-gallery:empty {
+        display: none;
+      }
+
+      .image-gallery {
+        margin-top: 16px;
+      }
+
+      .image-preview img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
         border-radius: 8px;
-        color: #e0e0e0;
-        font-size: 15px;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+        border: 1px solid #2a2a2a;
+      }
+
+      .image-gallery img {
+        max-width: 100%;
+        border-radius: 8px;
+        border: 1px solid #2a2a2a;
       }
 
       @media (max-width: 768px) {
@@ -219,11 +259,6 @@
         h1 {
           font-size: 28px;
           margin-bottom: 20px;
-        }
-
-        textarea {
-          min-height: 150px;
-          font-size: 14px;
         }
 
         input[type="text"],
@@ -249,14 +284,17 @@
     <div id="app">
       <div id="encrypt">
         <div id="encrypt-create">
-          <h1>Create encrypted note</h1>
+          <h1>Encrypt an image</h1>
           <form id="encrypt-create-form">
             <div>
-              <div class="help-text">Your secret message</div>
-              <textarea
-                id="encrypt-create-text"
-                placeholder="Enter your secret message here..."
-              ></textarea>
+              <div class="help-text">Choose image(s)</div>
+              <input
+                id="encrypt-create-images"
+                type="file"
+                accept="image/*"
+                multiple
+              />
+              <div id="encrypt-create-image-preview" class="image-preview"></div>
             </div>
             <div>
               <div class="help-text">Password to encrypt with</div>
@@ -272,7 +310,7 @@
           </form>
         </div>
         <div id="encrypt-success">
-          <h1>Encrypted note created</h1>
+          <h1>Encrypted image created</h1>
           <div class="help-text">
             Share this link - the encrypted data is in the URL
           </div>
@@ -281,15 +319,16 @@
               type="text"
               disabled
               id="encrypt-success-url"
-              value="https://afterthehash.vercel.app/#v1:ABC123..."
+              value="https://afterthehash.vercel.app/image-v1.html#v1:ABC123..."
             />
             <button type="button" id="encrypt-success-copy">Copy Link</button>
           </div>
+          <div id="encrypt-success-size-note" class="size-note"></div>
         </div>
       </div>
       <div id="decrypt">
         <div id="decrypt-locked">
-          <h1>Unlock encrypted note</h1>
+          <h1>Unlock encrypted image</h1>
           <form id="decrypt-locked-form">
             <div>
               <div class="help-text">Enter the password to decrypt</div>
@@ -304,10 +343,8 @@
           </form>
         </div>
         <div id="decrypt-unlocked">
-          <h1>Decrypted message</h1>
-          <div id="decrypt-unlocked-content">
-            This is where your decrypted message will appear...
-          </div>
+          <h1>Decrypted image</h1>
+          <div id="decrypt-unlocked-images" class="image-gallery"></div>
         </div>
       </div>
     </div>
@@ -336,7 +373,7 @@
           case STATES.ENCRYPT_CREATE:
             document.getElementById("encrypt").classList.add("active");
             document.getElementById("encrypt-create").classList.add("active");
-            document.getElementById("encrypt-create-text").focus();
+            document.getElementById("encrypt-create-images").focus();
             break;
           case STATES.ENCRYPT_SUCCESS:
             document.getElementById("encrypt").classList.add("active");
@@ -383,7 +420,14 @@
       }
 
       function arrayBufferToBase64(buffer) {
-        return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        const bytes = new Uint8Array(buffer);
+        // Chunk to avoid blowing the call stack on large (image) payloads.
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        return btoa(binary);
       }
 
       function base64ToArrayBuffer(base64) {
@@ -485,25 +529,88 @@
         }
       }
 
+      // ==================== IMAGE HANDLING ====================
+      // Selected images held as data URLs until they are encrypted.
+      let selectedImages = [];
+
+      function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function handleImageSelect(e) {
+        const files = Array.from(e.target.files || []);
+        selectedImages = await Promise.all(files.map(readFileAsDataURL));
+
+        const preview = document.getElementById("encrypt-create-image-preview");
+        preview.replaceChildren();
+        for (const dataUrl of selectedImages) {
+          const img = document.createElement("img");
+          img.src = dataUrl;
+          preview.appendChild(img);
+        }
+      }
+
+      function renderDecrypted(data) {
+        const imagesEl = document.getElementById("decrypt-unlocked-images");
+        imagesEl.replaceChildren();
+
+        let images = [];
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed && parsed.v === 1 && Array.isArray(parsed.images)) {
+            images = parsed.images;
+          }
+        } catch (_) {
+          // Malformed payload — leave the gallery empty.
+        }
+
+        for (const dataUrl of images) {
+          const img = document.createElement("img");
+          img.src = dataUrl;
+          imagesEl.appendChild(img);
+        }
+      }
+
       // ==================== EVENT HANDLERS ====================
       async function handleEncryptSubmit(e) {
         e.preventDefault();
 
-        const text = document.getElementById("encrypt-create-text").value;
         const password = document.getElementById(
           "encrypt-create-password",
         ).value;
 
-        if (!text || !password) {
-          alert("Please enter both a message and a password");
+        if (selectedImages.length === 0 || !password) {
+          alert("Please choose an image and enter a password");
           return;
         }
 
-        const result = await encrypt(text, password);
+        // Package images into a single structured payload.
+        const payload = JSON.stringify({
+          v: 1,
+          images: selectedImages,
+        });
+
+        const result = await encrypt(payload, password);
 
         if (result.ok) {
           const url = `${window.location.origin}${window.location.pathname}#v1:${result.data}`;
           document.getElementById("encrypt-success-url").value = url;
+
+          // Warn when the link grows large enough to hit browser/URL limits.
+          const sizeNote = document.getElementById("encrypt-success-size-note");
+          if (url.length > 30000) {
+            sizeNote.textContent = `Heads up: this link is ${Math.round(
+              url.length / 1024,
+            )} KB. Very large images can exceed what browsers or chat apps allow in a URL.`;
+          } else {
+            sizeNote.textContent = "";
+          }
+
           // Don't navigate to the hash, just show the success state
           setState(STATES.ENCRYPT_SUCCESS);
         } else {
@@ -536,8 +643,7 @@
 
         if (result.ok) {
           document.getElementById("decrypt-locked-error").textContent = "";
-          document.getElementById("decrypt-unlocked-content").textContent =
-            result.data;
+          renderDecrypted(result.data);
           setState(STATES.DECRYPT_UNLOCKED);
         } else {
           document.getElementById("decrypt-locked-error").textContent =
@@ -575,6 +681,10 @@
         document
           .getElementById("encrypt-create-form")
           .addEventListener("submit", handleEncryptSubmit);
+
+        document
+          .getElementById("encrypt-create-images")
+          .addEventListener("change", handleImageSelect);
 
         document
           .getElementById("decrypt-locked-form")
