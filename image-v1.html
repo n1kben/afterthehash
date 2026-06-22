@@ -200,6 +200,19 @@
         flex-shrink: 0;
       }
 
+      .open-link {
+        display: inline-block;
+        margin-top: 12px;
+        color: #61afef;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .open-link:hover {
+        text-decoration: underline;
+      }
+
       .size-note {
         color: #e5c07b;
         font-size: 13px;
@@ -444,6 +457,7 @@
             />
             <button type="button" id="encrypt-success-copy">Copy Link</button>
           </div>
+          <a id="encrypt-success-open" class="open-link" href="#">Open it here →</a>
           <div id="encrypt-success-size-note" class="size-note"></div>
         </div>
       </div>
@@ -673,12 +687,14 @@
       })();
 
       const NAV_LIMIT = 2 * 1024 * 1024; // Chromium navigation limit (clicked)
-      // Pasting a URL into Brave's address bar truncates it at ~598,700 chars
-      // (measured: a 700,000-char paste kept 598,694). Typing caps far lower
-      // (~32 KB) but nobody types these. Clicking has no such limit (works to
-      // NAV_LIMIT, verified at ~667 KB). Use a conservative 580,000 as the
-      // "safe to paste" threshold; above it, steer people to click instead.
-      const PASTE_LIMIT = 580000;
+      // Address-bar PASTE truncates long URLs, and the cutoff is
+      // browser-specific and not reliably knowable: Brave kept ~598,700 chars
+      // in one test, but other builds silently truncate a ~524,000-char paste.
+      // Typing caps far lower (~32 KB) but nobody types these. CLICKING has no
+      // such limit (works to NAV_LIMIT) — that's the reliable path, and the
+      // success screen always offers a clickable link. So treat paste as safe
+      // only for clearly-small links and steer everything larger to clicking.
+      const PASTE_LIMIT = 262144;
 
       function readFileAsDataURL(file) {
         return new Promise((resolve, reject) => {
@@ -905,6 +921,11 @@
         if (result.ok) {
           const url = `${window.location.origin}${window.location.pathname}#v1:${result.data}`;
           document.getElementById("encrypt-success-url").value = url;
+
+          // Clicking this anchor navigates in-page to the hash (reliable up to
+          // the ~2 MB navigation limit), so the user never has to paste a huge
+          // URL into the address bar — where it can be silently truncated.
+          document.getElementById("encrypt-success-open").href = url;
 
           // Warn when the link grows large enough to hit browser/URL limits.
           const sizeNote = document.getElementById("encrypt-success-size-note");
